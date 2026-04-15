@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AegisPath X — AI-powered context-aware personalized safety routing engine for smart mobility.">
+    <title>AegisPath X — Smart Safety Routing</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Heat -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ─── Header ───────────────────────────────────────────────── -->
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo-group">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <path d="M14 2L26 8V20L14 26L2 20V8L14 2Z" stroke="url(#logoGrad)" stroke-width="2" fill="none"/>
+                        <path d="M14 8L20 11V17L14 20L8 17V11L14 8Z" fill="url(#logoGrad)"/>
+                        <defs><linearGradient id="logoGrad" x1="2" y1="2" x2="26" y2="26">
+                            <stop stop-color="#00F0FF"/><stop offset="1" stop-color="#7B61FF"/>
+                        </linearGradient></defs>
+                    </svg>
+                </div>
+                <h1 class="logo-text">AegisPath <span class="logo-x">X</span></h1>
+            </div>
+            <span class="tagline">Context-Aware Safety Intelligence</span>
+        </div>
+        <div class="header-right">
+            <div class="live-badge" id="liveBadge">
+                <span class="pulse-dot"></span> LIVE
+            </div>
+            <div class="system-status" id="systemStatus">
+                <span class="status-dot green"></span> System Online
+            </div>
+        </div>
+    </header>
+
+    <!-- ─── Main Layout ──────────────────────────────────────────── -->
+    <main id="app-main">
+        <!-- Left: Map Area -->
+        <section class="map-section" id="mapSection">
+            <div id="map"></div>
+
+            <!-- Map Overlay Controls -->
+            <div class="map-overlay-controls" id="mapOverlayControls">
+                <button class="map-ctrl-btn active" id="btnHeatmap" title="Toggle Heatmap">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6" opacity="0.4"/><circle cx="8" cy="8" r="3"/></svg>
+                    Heatmap
+                </button>
+                <button class="map-ctrl-btn" id="btnRouteCompare" title="Compare Routes">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 14L8 2L14 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                    Compare
+                </button>
+            </div>
+
+            <!-- Smart Recommendation Card -->
+            <div class="smart-card hidden" id="smartCard">
+                <div class="smart-card-header">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1L11.5 6L17 7L13 11L14 17L9 14L4 17L5 11L1 7L6.5 6L9 1Z" fill="#FFD700"/></svg>
+                    <span>Smart Recommendation</span>
+                </div>
+                <div class="smart-card-body" id="smartCardBody">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Control Panel -->
+        <aside class="control-panel" id="controlPanel">
+            <!-- Context Controls -->
+            <div class="panel-section" id="contextSection">
+                <h2 class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5V9L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Route Context
+                </h2>
+
+                <div class="control-group">
+                    <label for="userType">Traveler Profile</label>
+                    <select id="userType">
+                        <option value="solo">🚶 Solo Traveler</option>
+                        <option value="female_traveler">👩 Female Traveler</option>
+                        <option value="delivery_rider">🏍️ Delivery Rider</option>
+                        <option value="commuter">🧑‍💼 Commuter</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="context-group">
+                        <span class="context-icon">🕒</span> Time:
+                        <span id="autoTimeDisplay" class="auto-detected">Detecting... (Auto-detected)</span>
+                    </div>
+                    <div class="context-group">
+                        <span class="context-icon">🌧️</span> Weather:
+                        <span id="autoWeatherDisplay" class="auto-detected">Detecting... (Live)</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary" id="btnFindRoute">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6 1L14 8L6 15V1Z"/></svg>
+                    Find Safe Route
+                </button>
+
+                <button class="btn-secondary" id="btnRunDemo">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L15 8L8 15M1 8H14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                    Run Demo Scenario
+                </button>
+            </div>
+
+            <!-- Active Weights Display -->
+            <div class="panel-section" id="weightsSection">
+                <h2 class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="10" width="3" height="6" rx="1" fill="currentColor"/><rect x="7.5" y="6" width="3" height="10" rx="1" fill="currentColor"/><rect x="13" y="2" width="3" height="14" rx="1" fill="currentColor"/></svg>
+                    Active Risk Weights
+                </h2>
+                <div class="weights-grid" id="weightsGrid">
+                    <div class="weight-bar">
+                        <div class="weight-label">Crime</div>
+                        <div class="weight-track"><div class="weight-fill crime" id="wCrime" style="width:25%"></div></div>
+                        <span class="weight-val" id="wCrimeVal">25%</span>
+                    </div>
+                    <div class="weight-bar">
+                        <div class="weight-label">Darkness</div>
+                        <div class="weight-track"><div class="weight-fill darkness" id="wDarkness" style="width:25%"></div></div>
+                        <span class="weight-val" id="wDarknessVal">25%</span>
+                    </div>
+                    <div class="weight-bar">
+                        <div class="weight-label">Weather</div>
+                        <div class="weight-track"><div class="weight-fill weather" id="wWeather" style="width:25%"></div></div>
+                        <span class="weight-val" id="wWeatherVal">25%</span>
+                    </div>
+                    <div class="weight-bar">
+                        <div class="weight-label">Isolation</div>
+                        <div class="weight-track"><div class="weight-fill isolation" id="wIsolation" style="width:25%"></div></div>
+                        <span class="weight-val" id="wIsolationVal">25%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decision Reasoning (Explainable AI) -->
+            <div class="panel-section" id="reasoningSection">
+                <h2 class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1C5 1 2 4.5 2 8C2 11 4 13.5 7 14.5V17H11V14.5C14 13.5 16 11 16 8C16 4.5 13 1 9 1Z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="9" cy="8" r="2" fill="currentColor"/></svg>
+                    AI Decision Engine
+                </h2>
+                <div class="reasoning-list" id="reasoningList">
+                    <div class="reasoning-placeholder">
+                        Select start &amp; end points on the map, then click <strong>Find Safe Route</strong>.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Incident Feed -->
+            <div class="panel-section" id="incidentSection">
+                <h2 class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L16 15H2L9 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="9" y1="7" x2="9" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="13" r="0.8" fill="currentColor"/></svg>
+                    <span>Live Incident Feed</span>
+                    <span class="badge" id="incidentCount">0</span>
+                </h2>
+                <div class="incident-list" id="incidentList">
+                    <div class="reasoning-placeholder">Loading incidents…</div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ─── Risk Timeline (below map) ────────────────────────────── -->
+    <section class="timeline-section hidden" id="timelineSection">
+        <div class="timeline-header">
+            <h2 class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="1,14 5,6 9,10 13,3 17,8" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Risk Timeline Graph
+            </h2>
+            <div class="timeline-legend">
+                <span class="legend-item"><span class="legend-dot safe"></span> Safe</span>
+                <span class="legend-item"><span class="legend-dot medium"></span> Medium</span>
+                <span class="legend-item"><span class="legend-dot high"></span> High</span>
+                <span class="legend-item"><span class="legend-dot critical"></span> Critical</span>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="riskTimelineChart"></canvas>
+        </div>
+    </section>
+
+    <!-- ─── Route Stats Bar ──────────────────────────────────────── -->
+    <section class="stats-bar hidden" id="statsBar">
+        <div class="stat-card" id="statDistance">
+            <div class="stat-value">—</div>
+            <div class="stat-label">Distance</div>
+        </div>
+        <div class="stat-card" id="statSafety">
+            <div class="stat-value">—</div>
+            <div class="stat-label">Safety Rating</div>
+        </div>
+        <div class="stat-card" id="statRisk">
+            <div class="stat-value">—</div>
+            <div class="stat-label">Avg Risk</div>
+        </div>
+        <div class="stat-card" id="statConfidence">
+            <div class="stat-value">—</div>
+            <div class="stat-label">Confidence</div>
+        </div>
+        <div class="stat-card" id="statDanger">
+            <div class="stat-value">—</div>
+            <div class="stat-label">Danger Zones</div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loader-ring"></div>
+        <p class="loader-text">Computing safest route…</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
